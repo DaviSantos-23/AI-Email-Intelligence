@@ -47,30 +47,30 @@ O sistema:
 
 📸 Demonstração
 ### Workflow de Triagem
-![Workflow de triagem](images/workflow-principal.png)
+![Workflow de triagem](assets/images/workflow-principal.png)
 
 ### Organização no Slack
-![Canais do Slack](images/sugesslack.png)
-![Canais do Slack](images/elogiosslack.png)
+![Canais do Slack](assets/images/sugesslack.png)
+![Canais do Slack](assets/images/elogiosslack.png)
 
 ### Emails de Teste
-![Emails de Teste](images/exemailelo.png)
-![Emails de Teste](images/emailexsuges.png)
+![Emails de Teste](assets/images/exemailelo.png)
+![Emails de Teste](assets/images/emailexsuges.png)
 
 ### Emails Respondidos
-![Emails de Teste](images/emailelogio.png)
-![Emails de Teste](images/emailexsuges.png)
+![Emails de Teste](assets/images/emailelogio.png)
+![Emails de Teste](assets/images/emailexsuges.png)
 
 ### Workflow de Relatório
 ![Workflow de relatório](images/relatorioemailfinal.png)
 ![Workflow de relatório](images/relafinal.png)
 
 ### Google Sheets (Planilha)
-![Google Sheets](images/planilha1.png)
-![Google Sheets](images/planilha2.png)
+![Google Sheets](assets/images/planilha1.png)
+![Google Sheets](assets/images/planilha2.png)
 
 ### Fluxo Funcionando(.Gif)
-![Fluxo Funcionando](assets/demo.gif)
+![Fluxo Funcionando](assets/gif/demo.gif)
 
 ---
 
