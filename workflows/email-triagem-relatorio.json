@@ -1,0 +1,1332 @@
+{
+  "name": "Ticket Intelligence AI",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "sender": "nbadavi30@gmail.com"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -528,
+        96
+      ],
+      "id": "7b9c7bf6-9df5-4a34-9f0f-a7883feacb5a",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Ed5UV6i3kvUV23l6",
+          "name": "Gmail novom"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "625916e2-640b-44e7-a276-e2120e0ea310",
+              "name": "nome",
+              "value": "={{ $json.from.value[0].name }}",
+              "type": "string"
+            },
+            {
+              "id": "412b389b-328e-400f-b25d-1a92a6ef3491",
+              "name": "email",
+              "value": "={{ $json.from.value[0].address }}",
+              "type": "string"
+            },
+            {
+              "id": "41298714-2326-4f50-8a2b-03e5301cba9a",
+              "name": "assunto",
+              "value": "={{ $json.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "07381f0b-cf54-4164-817c-6ae89b51f490",
+              "name": "texto",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -304,
+        96
+      ],
+      "id": "1292e6fc-0ada-434a-a034-72d5b50cdb32",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "text": "=Assunto: {{ $json.assunto }}\nCliente: {{ $json.nome }} - {{ $json.email }}\n\nCorpo do Email:\n{{ $json.texto }}\n",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "nome_cliente",
+              "description": "Nome do Cliente"
+            },
+            {
+              "name": "item_mencionado",
+              "description": "Produto ou Serviço mencionado no email ou Não Identificado"
+            },
+            {
+              "name": "ponto_principal",
+              "description": "Principal problema, objetivo, elogio da mensagem, reclamação, sugestão"
+            },
+            {
+              "name": "urgente",
+              "type": "boolean",
+              "description": "Indica se é uma mensagem urgente ou não.",
+              "required": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        -80,
+        96
+      ],
+      "id": "4bd859bf-ca89-435f-84ee-305cd33a41bc",
+      "name": "Information Extractor"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        528,
+        432
+      ],
+      "id": "4d2df745-7964-41a5-add3-e8dda20fabe0",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "CWxHRQLYImhfg14m",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U0BA97BQV2R",
+          "mode": "id"
+        },
+        "text": "=🚨 *FEEDBACK URGENTE RECEBIDO *🚨\n\nCliente: {{ $('Information Extractor').item.json.output.nome_cliente }}\nItem mencionado: {{ $('Information Extractor').item.json.output.item_mencionado }}: \nPonto principal: {{ $('Information Extractor').item.json.output.ponto_principal }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        560,
+        -16
+      ],
+      "id": "cd518d0e-db42-4330-9036-ea794314fce3",
+      "name": "Send a message",
+      "webhookId": "aaf3b3c5-d15c-4c76-953b-9cd4ef05db6f",
+      "credentials": {
+        "slackApi": {
+          "id": "IU5E3Un13hXgnfGz",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $('Edit Fields').item.json.texto }}",
+        "options": {
+          "categories": "Positive, Neutral, Negative",
+          "includeDetailedResults": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.sentimentAnalysis",
+      "typeVersion": 1.1,
+      "position": [
+        496,
+        192
+      ],
+      "id": "e9c0cf44-973d-47db-b6b3-437ef1cf77e5",
+      "name": "Sentiment Analysis"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.urgente }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    },
+                    "id": "5ff718d9-5e6a-4060-9c0b-82792ee7e93c"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9bc82e6b-6f1f-4bbe-9a29-1a091c26dc34",
+                    "leftValue": "={{ $json.output.urgente }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        96
+      ],
+      "id": "f972c255-13da-47f4-8161-727699fbc430",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $('Edit Fields').item.json.texto }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Bug",
+              "description": "Problemas Tecnicos. quando o cliente relata alguma falha nos botões no produto"
+            },
+            {
+              "category": "Reclamação",
+              "description": "Insatisfação geral. quando o cliente solicita o reembolso ou demonstra esta insatisfeito com o produto"
+            },
+            {
+              "category": "Sugestão",
+              "description": "Ideias de melhorias"
+            },
+            {
+              "category": "Elogio",
+              "description": "Feedback positivo"
+            }
+          ]
+        },
+        "options": {
+          "fallback": "other"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        848,
+        192
+      ],
+      "id": "8607d95d-4089-49aa-b321-08a8cf065d63",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "fb-bugs",
+          "mode": "name"
+        },
+        "text": "=*Novo Bug*\n\n*Cliente:* {{ $('Information Extractor').item.json.output.nome_cliente }}\n*Produto*: {{ $('Information Extractor').item.json.output.item_mencionado }}: \n*Problema*: {{ $('Information Extractor').item.json.output.ponto_principal }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1424,
+        -160
+      ],
+      "id": "07421b52-2fbf-4adc-b0e1-667fd1615332",
+      "name": "Send a message1",
+      "webhookId": "aaf3b3c5-d15c-4c76-953b-9cd4ef05db6f",
+      "credentials": {
+        "slackApi": {
+          "id": "IU5E3Un13hXgnfGz",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "fb-reclamacoes",
+          "mode": "name"
+        },
+        "text": "=*Nova Reclamação*\n\nCliente: {{ $('Information Extractor').item.json.output.nome_cliente }}\nproduto: {{ $('Information Extractor').item.json.output.item_mencionado }}: \nResumo da Reclamação: {{ $('Information Extractor').item.json.output.ponto_principal }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1424,
+        16
+      ],
+      "id": "e70b682c-e89c-44db-a0fd-c7dcbcbfd04f",
+      "name": "Send a message2",
+      "webhookId": "aaf3b3c5-d15c-4c76-953b-9cd4ef05db6f",
+      "credentials": {
+        "slackApi": {
+          "id": "IU5E3Un13hXgnfGz",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "fb-sugestoes",
+          "mode": "name"
+        },
+        "text": "= *Nova Sujestão do Cliente*\n\nCliente: {{ $('Information Extractor').item.json.output.nome_cliente }}\nSobre: {{ $('Information Extractor').item.json.output.item_mencionado }}: \nSujestão: {{ $('Information Extractor').item.json.output.ponto_principal }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1424,
+        192
+      ],
+      "id": "c66c44a3-d0e4-438f-9f66-dacdfee28c40",
+      "name": "Send a message4",
+      "webhookId": "aaf3b3c5-d15c-4c76-953b-9cd4ef05db6f",
+      "credentials": {
+        "slackApi": {
+          "id": "IU5E3Un13hXgnfGz",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "message": "=<p>ola {{ $('Information Extractor').item.json.output.nome_cliente }} ! dentro de 24h a equipe resolvera isso. </p>",
+        "options": {
+          "senderName": "Equipe Tecnica"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1648,
+        16
+      ],
+      "id": "6eb31e00-071a-4c21-9924-7b47c49ea0f2",
+      "name": "Reply to a message",
+      "webhookId": "30e22f78-05f2-4b6f-b478-818f3d7094ae",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Ed5UV6i3kvUV23l6",
+          "name": "Gmail novom"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "fb-elogios",
+          "mode": "name"
+        },
+        "text": "=*Elogio Recebido*\n\n*Cliente:* {{ $('Information Extractor').item.json.output.nome_cliente }}\n*Produto ou Serviço:* {{ $('Information Extractor').item.json.output.item_mencionado }}: \n*Comentario:* {{ $('Information Extractor').item.json.output.ponto_principal }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1632,
+        400
+      ],
+      "id": "86538b57-1b0e-4446-b70d-09403fb36500",
+      "name": "Send a message5",
+      "webhookId": "aaf3b3c5-d15c-4c76-953b-9cd4ef05db6f",
+      "credentials": {
+        "slackApi": {
+          "id": "IU5E3Un13hXgnfGz",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "message": "=<p>ola {{ $('Information Extractor').item.json.output.nome_cliente }} ! Agradecemos pelo(s) elogios !. </p>",
+        "options": {
+          "senderName": "Equipe Tecnica"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1856,
+        400
+      ],
+      "id": "69d00cf1-1bb6-4cb2-b86e-62bbea001322",
+      "name": "Reply to a message1",
+      "webhookId": "30e22f78-05f2-4b6f-b478-818f3d7094ae",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Ed5UV6i3kvUV23l6",
+          "name": "Gmail novom"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U0BA97BQV2R",
+          "mode": "id"
+        },
+        "text": "=🚨 *FEEDBACK Precisando de Revisão*🚨\n\n*Cliente:* {{ $('Information Extractor').item.json.output.nome_cliente }}\n*Assunto:*  {{ $('Edit Fields').item.json.assunto }}\n*Corpo do Email:* {{ $('Edit Fields').item.json.texto }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1632,
+        576
+      ],
+      "id": "7e52b1e9-27fe-4e20-aa86-d5327e0cfdb0",
+      "name": "Send a message6",
+      "webhookId": "aaf3b3c5-d15c-4c76-953b-9cd4ef05db6f",
+      "credentials": {
+        "slackApi": {
+          "id": "IU5E3Un13hXgnfGz",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "25d443c9-65f0-410a-a6dd-82c003e67813",
+              "name": "categoria",
+              "value": "bug",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1632,
+        -160
+      ],
+      "id": "428a6070-6b1b-4c7f-ab5d-0b959d8dbc8f",
+      "name": "categoriabug"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "25d443c9-65f0-410a-a6dd-82c003e67813",
+              "name": "categoria",
+              "value": "reclamacoes",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1808,
+        16
+      ],
+      "id": "874dd060-fb66-41a0-8d98-8eb13773c6fe",
+      "name": "categoriareclamação"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "25d443c9-65f0-410a-a6dd-82c003e67813",
+              "name": "categoria",
+              "value": "sugestao",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1648,
+        192
+      ],
+      "id": "6d3a4308-fdc6-41c4-abd1-ad1d29db3a88",
+      "name": "categoriasugestão"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "25d443c9-65f0-410a-a6dd-82c003e67813",
+              "name": "categoria",
+              "value": "elogio",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2016,
+        400
+      ],
+      "id": "3187ca91-e685-4121-b176-5b1c2656d7cd",
+      "name": "categoriaelogio"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "25d443c9-65f0-410a-a6dd-82c003e67813",
+              "name": "categoria",
+              "value": "outro",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1856,
+        576
+      ],
+      "id": "67106d8d-36c7-4b5e-a256-faec4489feb6",
+      "name": "categoriaoutro"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5741356a-06c2-4e78-9694-0526a39f6063",
+              "name": "nome_cliente",
+              "value": "={{ $('Information Extractor').item.json.output.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "d5d747d2-0f04-4928-96ec-0fbc3b03d27c",
+              "name": "item_mencionado",
+              "value": "={{ $('Information Extractor').item.json.output.item_mencionado }}",
+              "type": "string"
+            },
+            {
+              "id": "a104ece3-5393-4e8d-b208-805962806c05",
+              "name": "ponto_principal",
+              "value": "={{ $('Information Extractor').item.json.output.ponto_principal }}",
+              "type": "string"
+            },
+            {
+              "id": "5c8c3180-94ed-48f1-9b04-97c52e7743d2",
+              "name": "urgente",
+              "value": "={{ $('Information Extractor').item.json.output.urgente }}",
+              "type": "boolean"
+            },
+            {
+              "id": "b9837b4b-37cf-4799-a45a-68cefcb61d17",
+              "name": "=sentimento",
+              "value": "={{ $('Sentiment Analysis').item.json.sentimentAnalysis.category }}",
+              "type": "string"
+            },
+            {
+              "id": "a5a36900-acff-40d0-a2a1-7776c29383e8",
+              "name": "categoria",
+              "value": "={{ $json.categoria }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2336,
+        304
+      ],
+      "id": "28e81b66-8dd1-49d6-9041-573956c75d2e",
+      "name": "DadosFinais"
+    },
+    {
+      "parameters": {
+        "options": {
+          "summarizationMethodAndPrompts": {
+            "values": {
+              "summarizationMethod": "stuff",
+              "prompt": "=Escreva um resumo conciso em PT-BR de no maximo 20 palavras\n\n\n\"{text}\"\n\n\nRESUMO CONCISO: {{ $('Edit Fields').item.json.texto }}"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainSummarization",
+      "typeVersion": 2.1,
+      "position": [
+        2512,
+        304
+      ],
+      "id": "ce8565b3-00b7-432a-8665-6e3de259a451",
+      "name": "Summarization Chain"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1uuIGgXqS3J7m-8nqQ7UA6ouaOU-kBaFx-3C9_4zinnU",
+          "mode": "list",
+          "cachedResultName": "Feedbacks Mercattone",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uuIGgXqS3J7m-8nqQ7UA6ouaOU-kBaFx-3C9_4zinnU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1993238589,
+          "mode": "list",
+          "cachedResultName": "feedbacks",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uuIGgXqS3J7m-8nqQ7UA6ouaOU-kBaFx-3C9_4zinnU/edit#gid=1993238589"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cliente": "={{ $('Information Extractor').item.json.output.nome_cliente }}",
+            "problema": "={{ $('Information Extractor').item.json.output.ponto_principal }}",
+            "categoria": "={{ $('DadosFinais').item.json.categoria }}",
+            "sentimento": "={{ $('DadosFinais').item.json.sentimento }}",
+            "resumo": "={{ $('Edit Fields').item.json.texto }}",
+            "data": "={{ $today.format('dd/MM/yyyy') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cliente",
+              "displayName": "cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "problema",
+              "displayName": "problema",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sentimento",
+              "displayName": "sentimento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria",
+              "displayName": "categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resumo",
+              "displayName": "resumo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2848,
+        304
+      ],
+      "id": "34f71deb-4a15-4b14-9e75-c0579899b20e",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PSfSCa3XRARRW1We",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 6,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -528,
+        592
+      ],
+      "id": "d7b6666c-29af-4dd6-bae8-ccbb0ab25d3e",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1uuIGgXqS3J7m-8nqQ7UA6ouaOU-kBaFx-3C9_4zinnU",
+          "mode": "list",
+          "cachedResultName": "Feedbacks Mercattone",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uuIGgXqS3J7m-8nqQ7UA6ouaOU-kBaFx-3C9_4zinnU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1993238589,
+          "mode": "list",
+          "cachedResultName": "feedbacks",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uuIGgXqS3J7m-8nqQ7UA6ouaOU-kBaFx-3C9_4zinnU/edit#gid=1993238589"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -336,
+        592
+      ],
+      "id": "16784968-bdf4-4cdc-8d2c-1bf09d88fdbc",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PSfSCa3XRARRW1We",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Feedbacks de Hoje: \n{{ JSON.stringify($input.all()) }}",
+        "needsFallback": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Você é um analista de feedback. Gere um briefing executivo em HTML para o CEO sobre os feedbacks de hoje.\n\nUse tags HTML simples (h1, h2, p, ul, li, b, i). Inclua: titulo com a data, resumo do dia (total + sentimentos + categorias), casos urgentes, destaques e uma recomendação acionavel\n\nRetorne apenas o HTML, sem blocos de codigo, sem markdown, sem ```html"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        64,
+        592
+      ],
+      "id": "7931421b-1e6e-456a-9092-a2873fc387ae",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        816
+      ],
+      "id": "8a854660-8a57-4798-884d-217ad293091a",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "CWxHRQLYImhfg14m",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        112,
+        816
+      ],
+      "id": "e57c0ee2-8e1e-4078-a857-5345521f863c",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "pkjaB0hGz7E5tLdj",
+          "name": "Google Gemini Davi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        2512,
+        512
+      ],
+      "id": "f6347a2a-ee59-44a2-975c-b77680e54892",
+      "name": "Groq Chat Model2",
+      "credentials": {
+        "groqApi": {
+          "id": "CWxHRQLYImhfg14m",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "nbadavi30@gmail.com",
+        "subject": "Relatorio Diario de Feedbacks",
+        "message": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Central de Feedbacks Mercattone"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        384,
+        592
+      ],
+      "id": "9c8f5672-c92b-4a15-9548-2613095b0419",
+      "name": "Send a message3",
+      "webhookId": "87a8528c-f59b-4f6a-989a-7a67927789ed",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Ed5UV6i3kvUV23l6",
+          "name": "Gmail novom"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        592
+      ],
+      "id": "0a3c3128-5054-44a3-9bca-1b9e188a3ba1",
+      "name": "Aggregate"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Sentiment Analysis",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sentiment Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sentiment Analysis": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message1": {
+      "main": [
+        [
+          {
+            "node": "categoriabug",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message2": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply to a message": {
+      "main": [
+        [
+          {
+            "node": "categoriareclamação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message4": {
+      "main": [
+        [
+          {
+            "node": "categoriasugestão",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message5": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply to a message1": {
+      "main": [
+        [
+          {
+            "node": "categoriaelogio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message6": {
+      "main": [
+        [
+          {
+            "node": "categoriaoutro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "categoriabug": {
+      "main": [
+        [
+          {
+            "node": "DadosFinais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "categoriareclamação": {
+      "main": [
+        [
+          {
+            "node": "DadosFinais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "categoriasugestão": {
+      "main": [
+        [
+          {
+            "node": "DadosFinais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "categoriaelogio": {
+      "main": [
+        [
+          {
+            "node": "DadosFinais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "categoriaoutro": {
+      "main": [
+        [
+          {
+            "node": "DadosFinais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DadosFinais": {
+      "main": [
+        [
+          {
+            "node": "Summarization Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarization Chain": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarization Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send a message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "848b4a90-7fc8-4a36-9ef7-6521114b8894",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "735e8cc38cdf7c1a83fe21c9bccaaef441062d97dd944ad65f5676f295b29e74"
+  },
+  "id": "PjyoMbdiAPm9MxLi",
+  "tags": []
+}
