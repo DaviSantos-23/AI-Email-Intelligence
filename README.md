@@ -59,11 +59,10 @@ O sistema:
 
 ### Emails Respondidos
 ![Emails de Teste](assets/images/emailelogio.png)
-![Emails de Teste](assets/images/emailexsuges.png)
 
 ### Workflow de Relatório
-![Workflow de relatório](images/relatorioemailfinal.png)
-![Workflow de relatório](images/relafinal.png)
+![Workflow de relatório](assets/images/relatorioemailfinal.png)
+![Workflow de relatório](assets/images/relafinal.png)
 
 ### Google Sheets (Planilha)
 ![Google Sheets](assets/images/planilha1.png)
