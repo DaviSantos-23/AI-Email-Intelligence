@@ -102,7 +102,6 @@ O sistema também identifica a urgência da solicitação, permitindo priorizar 
 
 ## 🏗️ Arquitetura
 
-```text
                          📩 E-MAIL
                             │
                             ▼
@@ -147,7 +146,6 @@ O sistema também identifica a urgência da solicitação, permitindo priorizar 
                             ▼
                      📧 Gestor
 
----
 
 ## Workflow 1 — Triagem Inteligente
 
